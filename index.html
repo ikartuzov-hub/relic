@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title>Relic · находки</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   RELIC — витрина (полный путь). Категория: монеты.
+   Три слоя (universal-build-standard):
+   1) ДВИЖОК  — этот файл: роутинг, рендер, переключатели
+   2) ЛОКАЛИ  — объект L ниже. Живые: ru/en/pt. Задел: de/es/fr
+   3) КОНТЕНТ — внутри локалей (тексты поверхностей)
+   Маршрут (route-archive): intro → демо → листовка → продать → метод
+   Мосты: «оценить свою» → @RelicFindBot ; футер → Hub
+   ============================================================ */
+:root{
+  --bg:#1a140d; --ink:#f3ede2; --ink-dim:#cbb89a; --mute:#9a8a6e;
+  --accent:#C0894B; --line:#3a2e1f; --surface:#241a10; --surface-2:#2a2016;
+  --ok-bg:#1d3b2a; --ok-fg:#8fd4a8; --mid-bg:#3a2e12; --mid-fg:#e0bd6a;
+}
+:root[data-theme="light"]{
+  --bg:#f3ede2; --ink:#2a2016; --ink-dim:#5a4a36; --mute:#8a7659;
+  --accent:#8a5a24; --line:#d8cbb0; --surface:#fbf7ef; --surface-2:#efe7d8;
+  --ok-bg:#dff0e4; --ok-fg:#2f6e45; --mid-bg:#f4e6c6; --mid-fg:#8a6512;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,sans-serif;
+  min-height:100vh;display:flex;justify-content:center;transition:background .4s,color .4s}
+.app{width:100%;max-width:440px;min-height:100vh;display:flex;flex-direction:column;position:relative}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 4px;flex:0 0 auto}
+.brandmark{width:26px;height:26px}
+.tools{display:flex;align-items:center;gap:4px}
+.tbtn{background:none;border:none;color:var(--mute);font-size:15px;cursor:pointer;padding:6px 8px;line-height:1;border-radius:8px}
+.tbtn:hover{color:var(--accent)}
+.tbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@keyframes markIn{
+  0%{transform:translate(calc(50vw - 33px),42vh) scale(8);opacity:0}
+  18%{opacity:1} 70%{transform:translate(calc(50vw - 33px),42vh) scale(8)}
+  100%{transform:translate(0,0) scale(1)}}
+.brandmark.reveal{animation:markIn 2.3s cubic-bezier(.65,0,.25,1) both}
+@media(prefers-reduced-motion:reduce){.brandmark.reveal{animation:none}}
+
+.view{flex:1;display:none;flex-direction:column;padding:8px 24px 26px}
+.view.on{display:flex}
+.eyebrow{color:var(--accent);font-size:13px;letter-spacing:.4px;margin:14px 0 16px}
+h1{font-family:'Fraunces',serif;font-weight:500;font-size:30px;line-height:1.2;margin:0 0 14px}
+h2{font-family:'Fraunces',serif;font-weight:500;font-size:24px;line-height:1.25;margin:0 0 12px}
+.lede{color:var(--ink-dim);font-size:16px;line-height:1.6;margin:0 0 24px}
+p{font-size:15px;line-height:1.6}
+.proof{background:var(--surface-2);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;
+  padding:15px 18px;margin:0 0 28px}
+.proof p{margin:0;color:var(--ink-dim);font-size:14px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:none;
+  border-radius:14px;padding:16px;font-family:'Manrope',sans-serif;font-size:16px;font-weight:600;cursor:pointer;text-decoration:none}
+.btn-primary{background:var(--accent);color:var(--bg)}
+.btn-primary:active{transform:scale(.985)}
+.btn-ghost{background:transparent;color:var(--ink-dim);border:1px solid var(--line);font-weight:500;font-size:15px;padding:14px}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.gap{height:10px}
+.foot{color:var(--mute);font-size:12px;text-align:center;margin-top:auto;padding-top:24px}
+.foot a{color:var(--mute);text-decoration:none;border-bottom:1px solid var(--line)}
+
+/* демо-карточка */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden;margin:4px 0 18px}
+.card-photo{height:130px;background:var(--surface-2);display:flex;align-items:center;justify-content:center}
+.card-body{padding:16px 18px 20px}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:9px;margin:0 0 12px}
+.b-mid{background:var(--mid-bg);color:var(--mid-fg)}
+.ctitle{font-family:'Fraunces',serif;font-weight:500;font-size:19px;margin:0 0 3px}
+.csub{color:var(--ink-dim);font-size:14px;margin:0 0 14px}
+.crow{display:flex;gap:8px;color:var(--mute);font-size:13px;line-height:1.5;margin:0 0 8px}
+.crow .ic{color:var(--accent);flex:none;margin-top:1px}
+
+/* шаги */
+.steps{margin:0 0 24px;padding:0;list-style:none}
+.step{display:flex;gap:14px;align-items:flex-start;margin:0 0 16px}
+.snum{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--surface-2);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px}
+.step p{margin:4px 0 0;color:var(--ink-dim);font-size:15px}
+.note{color:var(--mute);font-size:13px;line-height:1.55;margin:0 0 24px}
+
+/* коммерческий блок / блоки метода */
+.block{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:0 0 14px}
+.block h3{font-family:'Manrope';font-size:16px;font-weight:600;margin:0 0 6px;color:var(--ink)}
+.block p{margin:0;color:var(--ink-dim);font-size:14px;line-height:1.55}
+.tag{display:inline-block;background:var(--surface-2);color:var(--accent);font-size:12px;font-weight:600;
+  padding:5px 12px;border-radius:8px;margin:0 0 16px}
+
+/* нижний таб */
+.tabbar{flex:0 0 auto;display:none;border-top:1px solid var(--line);background:var(--bg)}
+.tabbar.on{display:flex}
+.tab{flex:1;background:none;border:none;color:var(--mute);font-family:'Manrope';font-size:11px;
+  padding:10px 4px 12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
+.tab.act{color:var(--accent)}
+.tab .ic{font-size:20px;line-height:1}
+.sr-only{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <svg class="brandmark reveal" viewBox="0 0 100 100" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Relic"><path d="M26 14 L26 66"/><path d="M26 14 C52 14 52 41 28 42 L26 42"/><path d="M34 42 Q49 53 58 66"/><path d="M14 84 Q26 78 38 84 Q50 90 62 84 Q74 78 86 84"/></svg>
+    <div class="tools">
+      <button class="tbtn" id="langBtn" aria-label="Язык">🌐 <span id="langCur">RU</span></button>
+      <button class="tbtn" id="themeBtn" aria-label="Тема">☀</button>
+    </div>
+  </div>
+
+  <section class="view on" id="v-intro"></section>
+  <section class="view" id="v-demo"></section>
+  <section class="view" id="v-flyer"></section>
+  <section class="view" id="v-pro"></section>
+  <section class="view" id="v-method"></section>
+
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+
+<script>
+/* ============ СЛОЙ 2/3 — ЛОКАЛИ + КОНТЕНТ ============ */
+const BOT = "https://t.me/RelicFindBot";
+const HUB = "https://ikartuzov-hub.github.io/seedwave-catalog/hub/";
+
+const L = {
+  ru:{
+    name:"RU",
+    eyebrow:"Relic · находки",
+    h1:"Думал — не ценное. А оказалось — бесценное.",
+    lede:"Поиск клада в том, что годами лежит без дела. Сфоткай старую монету — вдруг она дороже, чем кажется.",
+    proof:"«Разобрали с внуками дедов комод — а там серебро»",
+    introCta:"Начать поиск",
+    tabDemo:"Демо", tabFlyer:"О Relic", tabPro:"Продать", tabMethod:"Как оцениваем",
+    demoH:"Фото → находка за секунды",
+    demoBadge:"Серебро, но массовая",
+    demoTitle:"Полтинник 1926",
+    demoSub:"СССР · 1926 · серебро 900",
+    demoLook:"Смотри: гурт «9 грамм серебра», вес 10 г, ⌀26 мм",
+    demoFlag:"Тираж 43 млн — цена средняя; в блеске и капсуле дороже",
+    demoCap:"Пример находки. У тебя получится так же.",
+    demoCta:"Оценить свою монету",
+    flyerH:"Старые монеты, которые могут стоить денег",
+    flyerP:"У многих дома лежит коллекция от деда или горсть непонятных монет. Relic за минуту помогает понять, есть ли среди них ценное — и что с этим делать.",
+    s1:"Сфоткай монету", s2:"Получи первичную оценку", s3:"Ценное — передай эксперту",
+    flyerFree:"Сейчас — бесплатный пилот. Просто попробуй.",
+    flyerCta:"Открыть Relic в Telegram",
+    proTag:"Нашлось ценное?",
+    proH:"Оценим и поможем продать",
+    proP:"Профессиональный антиквар-искусствовед оценит находку и поможет продать её по реальной цене.",
+    proB1H:"Платишь только с результата",
+    proB1P:"Комиссия берётся с продажи. Никаких авансов и абонентской платы.",
+    proB2H:"Сначала точная оценка",
+    proB2P:"Эксперт смотрит вес, диаметр, гурт, состояние и сверяет с аукционными сделками.",
+    proB3H:"Дорогое — на аукцион",
+    proB3P:"Редкие монеты продаём поштучно через профильные площадки, а не кучей.",
+    proCta:"Отправить находку на оценку",
+    methodH:"Как мы оцениваем",
+    m1H:"AI + живой эксперт",
+    m1P:"Сначала AI даёт первичную атрибуцию по фото. Похоже на ценное — подключается человек-искусствовед.",
+    m2H:"Не чисти монету",
+    m2P:"Чистка убивает цену. Патина и естественный износ — часть ценности, а не грязь.",
+    m3H:"Честно про цену",
+    m3P:"AI не выдумывает стоимость. Точную цену даёт только человек — по реальным продажам аналогов.",
+    m4H:"Что важно на фото",
+    m4P:"Общий вид монеты, затем крупно гурт и год. По хорошему снимку оценка точнее.",
+    botH:"Relic в Telegram",
+    botP:"Отправь фото монеты боту — оценка придёт в чат. Ценное уйдёт эксперту.",
+    botCta:"Открыть в Telegram",
+    foot:"© Igor Kartuzov · SeedWave"
+  },
+  en:{
+    name:"EN",
+    eyebrow:"Relic · finds",
+    h1:"Thought it was worthless. Turns out — priceless.",
+    lede:"A treasure hunt through what's been sitting untouched for years. Snap an old coin — it might be worth more than it looks.",
+    proof:"\"Went through grandpa's drawer with the kids — found silver\"",
+    introCta:"Start the hunt",
+    tabDemo:"Demo", tabFlyer:"About", tabPro:"Sell", tabMethod:"How we value",
+    demoH:"Photo → a find in seconds",
+    demoBadge:"Silver, but common",
+    demoTitle:"50-kopeck 1926",
+    demoSub:"USSR · 1926 · 900 silver",
+    demoLook:"Check: edge mark, weight 10 g, ⌀26 mm",
+    demoFlag:"Huge mintage — mid price; brilliant or capsule worth more",
+    demoCap:"A sample find. Yours will look the same.",
+    demoCta:"Value my coin",
+    flyerH:"Old coins that might be worth money",
+    flyerP:"Many people keep a grandparent's collection or a handful of odd coins. Relic helps you tell in a minute whether anything is valuable — and what to do about it.",
+    s1:"Photograph the coin", s2:"Get a first read", s3:"Valuable? Pass it to an expert",
+    flyerFree:"Free pilot right now. Just try it.",
+    flyerCta:"Open Relic in Telegram",
+    proTag:"Found something valuable?",
+    proH:"We'll value it and help you sell",
+    proP:"A professional antiques expert assesses your find and helps sell it at a real price.",
+    proB1H:"Pay only on results",
+    proB1P:"Commission is taken from the sale. No upfront fees, no subscription.",
+    proB2H:"Accurate valuation first",
+    proB2P:"The expert checks weight, diameter, edge, condition and compares with auction results.",
+    proB3H:"Rare goes to auction",
+    proB3P:"Rare coins are sold individually through specialist venues, not in a pile.",
+    proCta:"Send the find for valuation",
+    methodH:"How we value",
+    m1H:"AI + a human expert",
+    m1P:"AI gives a first attribution from the photo. If it looks valuable, a human expert steps in.",
+    m2H:"Don't clean the coin",
+    m2P:"Cleaning destroys value. Patina and natural wear are part of the value, not dirt.",
+    m3H:"Honest about price",
+    m3P:"AI never invents a price. The exact figure comes only from a human, based on real sales.",
+    m4H:"What matters in a photo",
+    m4P:"The whole coin first, then a close-up of the edge and date. A good shot means a sharper read.",
+    botH:"Relic on Telegram",
+    botP:"Send a coin photo to the bot — the read comes back in chat. Valuable items reach the expert.",
+    botCta:"Open in Telegram",
+    foot:"© Igor Kartuzov · SeedWave"
+  },
+  pt:{
+    name:"PT",
+    eyebrow:"Relic · achados",
+    h1:"Achavas que não valia nada. Afinal — não tem preço.",
+    lede:"Uma caça ao tesouro no que está esquecido há anos. Fotografa uma moeda antiga — pode valer mais do que parece.",
+    proof:"\"Vasculhámos a gaveta do avô com os netos — era prata\"",
+    introCta:"Começar a caça",
+    tabDemo:"Demo", tabFlyer:"Sobre", tabPro:"Vender", tabMethod:"Como avaliamos",
+    demoH:"Foto → um achado em segundos",
+    demoBadge:"Prata, mas comum",
+    demoTitle:"50 copeques 1926",
+    demoSub:"URSS · 1926 · prata 900",
+    demoLook:"Vê: bordo, peso 10 g, ⌀26 mm",
+    demoFlag:"Tiragem enorme — preço médio; brilhante vale mais",
+    demoCap:"Um achado de exemplo. O teu será igual.",
+    demoCta:"Avaliar a minha moeda",
+    flyerH:"Moedas antigas que podem valer dinheiro",
+    flyerP:"Muita gente guarda a coleção do avô ou um punhado de moedas estranhas. O Relic ajuda a perceber num minuto se há algo valioso — e o que fazer com isso.",
+    s1:"Fotografa a moeda", s2:"Recebe uma primeira leitura", s3:"Valiosa? Entrega a um perito",
+    flyerFree:"Piloto gratuito por agora. Experimenta.",
+    flyerCta:"Abrir o Relic no Telegram",
+    proTag:"Encontraste algo valioso?",
+    proH:"Avaliamos e ajudamos a vender",
+    proP:"Um perito em antiguidades avalia o achado e ajuda a vendê-lo pelo preço real.",
+    proB1H:"Pagas só com resultado",
+    proB1P:"A comissão sai da venda. Sem adiantamentos nem mensalidades.",
+    proB2H:"Primeiro a avaliação certa",
+    proB2P:"O perito vê peso, diâmetro, bordo, estado e compara com vendas em leilão.",
+    proB3H:"Raro vai a leilão",
+    proB3P:"Moedas raras vendem-se uma a uma em plataformas especializadas, não a granel.",
+    proCta:"Enviar o achado para avaliação",
+    methodH:"Como avaliamos",
+    m1H:"IA + perito humano",
+    m1P:"A IA dá uma primeira atribuição pela foto. Se parecer valioso, entra um perito humano.",
+    m2H:"Não limpes a moeda",
+    m2P:"Limpar destrói o valor. A pátina e o desgaste fazem parte do valor, não são sujidade.",
+    m3H:"Honestos quanto ao preço",
+    m3P:"A IA não inventa preços. O valor exato vem só de uma pessoa, com base em vendas reais.",
+    m4H:"O que importa na foto",
+    m4P:"Primeiro a moeda inteira, depois o bordo e a data em grande plano. Boa foto, leitura melhor.",
+    botH:"Relic no Telegram",
+    botP:"Envia a foto da moeda ao bot — a leitura volta no chat. O valioso chega ao perito.",
+    botCta:"Abrir no Telegram",
+    foot:"© Igor Kartuzov · SeedWave"
+  }
+};
+const SOON = ["de","es","fr"]; /* задел — наполняем по спросу */
+
+/* ============ СЛОЙ 1 — ДВИЖОК ============ */
+let lang = (new URLSearchParams(location.search).get('lang')||'ru');
+if(!L[lang]) lang = 'ru';
+let theme = 'dark';
+
+const COIN = '<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#5a4a32" stroke-width="1.4"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/></svg>';
+const I = {
+  eye:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  flag:'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4"/></svg>',
+  send:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>',
+  play:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9z"/></svg>',
+  tD:'◆', tF:'❖', tP:'€', tM:'✦'
+};
+
+function foot(t){ return '<p class="foot">'+t.foot+'</p>'; }
+function botLink(t,label){ return '<a class="btn btn-primary" href="'+BOT+'?start=relic_'+lang+'">'+I.send+(label||t.botCta)+'</a>'; }
+
+function render(){
+  const t = L[lang];
+  document.getElementById('langCur').textContent = t.name;
+
+  document.getElementById('v-intro').innerHTML =
+    '<p class="eyebrow">'+t.eyebrow+'</p>'+
+    '<h1>'+t.h1+'</h1><p class="lede">'+t.lede+'</p>'+
+    '<div class="proof"><p>'+t.proof+'</p></div>'+
+    '<button class="btn btn-primary" onclick="go(\'demo\')">'+I.play+t.introCta+'</button>'+
+    foot(t);
+
+  document.getElementById('v-demo').innerHTML =
+    '<h2>'+t.demoH+'</h2>'+
+    '<div class="card"><div class="card-photo">'+COIN+'</div><div class="card-body">'+
+      '<span class="badge b-mid">'+I.flag+t.demoBadge+'</span>'+
+      '<div class="ctitle">'+t.demoTitle+'</div><div class="csub">'+t.demoSub+'</div>'+
+      '<div class="crow"><span class="ic">'+I.eye+'</span><span>'+t.demoLook+'</span></div>'+
+      '<div class="crow"><span class="ic">'+I.flag+'</span><span>'+t.demoFlag+'</span></div>'+
+    '</div></div>'+
+    '<p class="note">'+t.demoCap+'</p>'+
+    botLink(t, t.demoCta)+foot(t);
+
+  document.getElementById('v-flyer').innerHTML =
+    '<h2>'+t.flyerH+'</h2><p class="lede">'+t.flyerP+'</p>'+
+    '<ul class="steps">'+
+      '<li class="step"><span class="snum">1</span><p>'+t.s1+'</p></li>'+
+      '<li class="step"><span class="snum">2</span><p>'+t.s2+'</p></li>'+
+      '<li class="step"><span class="snum">3</span><p>'+t.s3+'</p></li>'+
+    '</ul>'+
+    '<p class="note">'+t.flyerFree+'</p>'+
+    botLink(t, t.flyerCta)+foot(t);
+
+  document.getElementById('v-pro').innerHTML =
+    '<span class="tag">'+t.proTag+'</span>'+
+    '<h2>'+t.proH+'</h2><p class="lede">'+t.proP+'</p>'+
+    '<div class="block"><h3>'+t.proB1H+'</h3><p>'+t.proB1P+'</p></div>'+
+    '<div class="block"><h3>'+t.proB2H+'</h3><p>'+t.proB2P+'</p></div>'+
+    '<div class="block"><h3>'+t.proB3H+'</h3><p>'+t.proB3P+'</p></div>'+
+    '<div class="gap"></div>'+botLink(t, t.proCta)+foot(t);
+
+  document.getElementById('v-method').innerHTML =
+    '<h2>'+t.methodH+'</h2>'+
+    '<div class="block"><h3>'+t.m1H+'</h3><p>'+t.m1P+'</p></div>'+
+    '<div class="block"><h3>'+t.m2H+'</h3><p>'+t.m2P+'</p></div>'+
+    '<div class="block"><h3>'+t.m3H+'</h3><p>'+t.m3P+'</p></div>'+
+    '<div class="block"><h3>'+t.m4H+'</h3><p>'+t.m4P+'</p></div>'+
+    foot(t);
+
+  document.getElementById('tabbar').innerHTML =
+    '<button class="tab" data-v="demo"><span class="ic">'+I.tD+'</span>'+t.tabDemo+'</button>'+
+    '<button class="tab" data-v="flyer"><span class="ic">'+I.tF+'</span>'+t.tabFlyer+'</button>'+
+    '<button class="tab" data-v="pro"><span class="ic">'+I.tP+'</span>'+t.tabPro+'</button>'+
+    '<button class="tab" data-v="method"><span class="ic">'+I.tM+'</span>'+t.tabMethod+'</button>';
+  document.querySelectorAll('.tab').forEach(b=> b.onclick=()=>go(b.dataset.v));
+  markTab();
+}
+
+let current='intro';
+function go(v){
+  current=v;
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
+  document.getElementById('v-'+v).classList.add('on');
+  const tb=document.getElementById('tabbar');
+  if(v==='intro') tb.classList.remove('on'); else tb.classList.add('on');
+  markTab();
+  window.scrollTo(0,0);
+}
+function markTab(){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('act', b.dataset.v===current));
+}
+
+/* язык: ru → en → pt → (de/es/fr — скоро) → ru */
+document.getElementById('langBtn').onclick=()=>{
+  const live=Object.keys(L);
+  let i=live.indexOf(lang);
+  lang=live[(i+1)%live.length];
+  render(); go(current);
+};
+document.getElementById('themeBtn').onclick=()=>{
+  theme = theme==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme', theme==='light'?'light':'');
+  document.getElementById('themeBtn').textContent = theme==='dark'?'☀':'☾';
+};
+
+render();
+</script>
+</body>
+</html>
