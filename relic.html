@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title>Relic · находки</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   RELIC — прототип. Категория: монеты.
+   Архитектура трёх слоёв (universal-build-standard):
+   1) ДВИЖОК  — этот файл: логика, рендер, вызов AI, поведение
+   2) ЛОКАЛИ  — объект UI ниже (сейчас только ru; новый язык = словарь)
+   3) КОНТЕНТ — объект CATEGORY ниже (справочный слой по монетам;
+                новая категория = запись, движок не трогаем)
+   ============================================================ */
+
+:root{
+  --bg:#1a140d; --ink:#f3ede2; --ink-dim:#cbb89a; --mute:#9a8a6e;
+  --accent:#C0894B; --line:#3a2e1f; --surface:#241a10; --surface-2:#2a2016;
+  --ok-bg:#1d3b2a; --ok-fg:#8fd4a8;
+  --mid-bg:#3a2e12; --mid-fg:#e0bd6a;
+  --un-bg:#2c2622; --un-fg:#b8a890;
+}
+:root[data-theme="light"]{
+  --bg:#f3ede2; --ink:#2a2016; --ink-dim:#5a4a36; --mute:#8a7659;
+  --accent:#8a5a24; --line:#d8cbb0; --surface:#fbf7ef; --surface-2:#efe7d8;
+  --ok-bg:#dff0e4; --ok-fg:#2f6e45;
+  --mid-bg:#f4e6c6; --mid-fg:#8a6512;
+  --un-bg:#ece4d6; --un-fg:#6a5a44;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:'Manrope',system-ui,sans-serif;
+  min-height:100vh; display:flex; justify-content:center;
+  transition:background .4s, color .4s;
+}
+.app{width:100%; max-width:440px; min-height:100vh; display:flex; flex-direction:column; position:relative}
+
+/* верхняя строка: значок слева, тема справа */
+.topbar{display:flex; align-items:center; justify-content:space-between; padding:14px 20px 4px}
+.brandmark{width:26px; height:26px}
+.themebtn{background:none; border:none; color:var(--mute); font-size:18px; cursor:pointer; padding:6px; line-height:1; border-radius:8px}
+.themebtn:hover{color:var(--accent)}
+.themebtn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+/* reveal-анимация значка (стандарт серии B.3) */
+@keyframes markIn{
+  0%{transform:translate(calc(50vw - 33px), 42vh) scale(8); opacity:0}
+  18%{opacity:1}
+  72%{transform:translate(calc(50vw - 33px), 42vh) scale(8)}
+  100%{transform:translate(0,0) scale(1)}
+}
+.brandmark.reveal{animation:markIn 2.4s cubic-bezier(.65,0,.25,1) both}
+@media(prefers-reduced-motion:reduce){.brandmark.reveal{animation:none}}
+
+.screen{flex:1; display:flex; flex-direction:column; padding:8px 24px 28px}
+.eyebrow{color:var(--accent); font-size:13px; letter-spacing:.4px; margin:14px 0 16px}
+h1{font-family:'Fraunces',serif; font-weight:500; font-size:30px; line-height:1.2; margin:0 0 14px}
+.lede{color:var(--ink-dim); font-size:16px; line-height:1.6; margin:0 0 26px}
+
+.proof{background:var(--surface-2); border-left:3px solid var(--accent);
+  border-radius:0 12px 12px 0; padding:15px 18px; margin:0 0 30px}
+.proof p{margin:0; color:var(--ink-dim); font-size:14px; line-height:1.5}
+.proof .ic{color:var(--accent); margin-right:7px}
+
+.btn{display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; border:none; border-radius:14px; padding:16px;
+  font-family:'Manrope',sans-serif; font-size:16px; font-weight:600; cursor:pointer}
+.btn-primary{background:var(--accent); color:var(--bg)}
+.btn-primary:active{transform:scale(.985)}
+.btn-ghost{background:transparent; color:var(--ink-dim); border:1px solid var(--line); font-weight:500; font-size:15px; padding:14px}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.btn:disabled{opacity:.5; cursor:default}
+#file{display:none}
+
+.foot{color:var(--mute); font-size:12px; text-align:center; margin-top:auto; padding-top:26px}
+.foot a{color:var(--mute); text-decoration:none; border-bottom:1px solid var(--line)}
+
+/* экран загрузки / ожидания */
+.pending{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:18px}
+.thumb{width:150px; height:150px; border-radius:18px; object-fit:cover; border:1px solid var(--line)}
+.spinner{width:34px; height:34px; border:3px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spinner{animation-duration:2s}}
+.pending p{color:var(--ink-dim); font-size:15px; margin:0}
+
+/* карточка находки */
+.card-photo{height:150px; background:var(--surface-2); border-radius:18px; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; margin:8px 0 18px}
+.card-photo img{width:100%; height:100%; object-fit:cover}
+.badge{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600;
+  padding:6px 13px; border-radius:9px; margin:0 0 14px}
+.badge .ic{font-size:14px}
+.b-ok{background:var(--ok-bg); color:var(--ok-fg)}
+.b-mid{background:var(--mid-bg); color:var(--mid-fg)}
+.b-un{background:var(--un-bg); color:var(--un-fg)}
+.card-title{font-family:'Fraunces',serif; font-weight:500; font-size:22px; margin:0 0 4px}
+.card-sub{color:var(--ink-dim); font-size:15px; margin:0 0 18px}
+.detail{border-top:1px solid var(--line); padding-top:14px; margin-bottom:20px}
+.detail .row{display:flex; gap:9px; align-items:flex-start; color:var(--ink-dim); font-size:14px; line-height:1.55; margin:0 0 9px}
+.detail .row:last-child{margin-bottom:0}
+.detail .ic{color:var(--accent); flex:0 0 auto; margin-top:2px}
+.gap{height:10px}
+.err{color:var(--mid-fg); font-size:14px; line-height:1.6; text-align:center; margin:0 0 22px}
+
+.sr-only{position:absolute; left:-9999px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <svg class="brandmark reveal" viewBox="0 0 100 100" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Relic">
+      <path d="M26 14 L26 66"/><path d="M26 14 C52 14 52 41 28 42 L26 42"/><path d="M34 42 Q49 53 58 66"/><path d="M14 84 Q26 78 38 84 Q50 90 62 84 Q74 78 86 84"/>
+    </svg>
+    <button class="themebtn" id="themeBtn" aria-label="Сменить тему">☀</button>
+  </div>
+  <div class="screen" id="screen"></div>
+</div>
+
+<input type="file" id="file" accept="image/*" capture="environment"/>
+
+<script>
+/* ================= СЛОЙ 2 — ЛОКАЛИ (сейчас только ru) ================= */
+const UI = {
+  ru: {
+    eyebrow:"Relic · находки",
+    h1:"Что из этого — клад, а что хлам?",
+    lede:"Сфоткай старую монету — узнай за 10 секунд, стоит ли она внимания. И что с ней делать дальше.",
+    proof:"«Монета прадеда оказалась серебром 1899 года»",
+    shoot:"Снять монету",
+    analyzing:"Смотрю на монету…",
+    badgeOk:"Похоже на ценное",
+    badgeMid:"Скорее массовая",
+    badgeUn:"Нужен снимок получше",
+    lookAt:"Смотри",
+    flag:"Осторожно",
+    toExpert:"Отправить эксперту на оценку",
+    selfSell:"Как продать самому",
+    again:"Снять другую",
+    notCoin:"На фото не вижу монету. Сними монету целиком при дневном свете, без вспышки.",
+    expertSent:"Готово — в рабочей версии фото и твой контакт уйдут эксперту, а находка попадёт в базу SeedWave.",
+    failed:"Не получилось распознать. Попробуй ещё раз — фото покрупнее и при хорошем свете.",
+    foot:"© Igor Kartuzov · SeedWave"
+  }
+};
+const LANG = new URLSearchParams(location.search).get('lang') || 'ru';
+const t = UI[LANG] || UI.ru;
+
+/* ================= СЛОЙ 3 — КОНТЕНТ (справочный слой) =================
+   Сейчас активна одна категория — монеты. Расширение заложено
+   архитектурно: добавить запись в CATEGORY + правило в движке.
+   Картины/арт в рабочей версии получат verdict:"expert" сразу,
+   без AI-оценки. Здесь не активируем. */
+const CATEGORY = {
+  coin: {
+    // что отправляем модели как рамку оценки именно монет
+    brief:"монета (нумизматика)",
+    aiVerdicts:["valuable","mid","unclear","not_coin"]
+  }
+};
+
+/* ================= СЛОЙ 1 — ДВИЖОК ================= */
+const screen = document.getElementById('screen');
+const fileInput = document.getElementById('file');
+let theme = 'dark';
+
+document.getElementById('themeBtn').addEventListener('click', ()=>{
+  theme = theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light':'');
+  document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀' : '☾';
+});
+
+const ICON = {
+  ok:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>',
+  eye:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  flag:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>',
+  cam:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h3l1.5-2h5L16 8h3a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  exp:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 21c0-4 3.5-6 7-6s7 2 7 6"/><path d="M17 11l1.5 1.5L21 9.5"/></svg>'
+};
+
+function footer(){ return '<p class="foot">'+t.foot+'</p>'; }
+
+function renderIntro(){
+  screen.innerHTML =
+    '<p class="eyebrow">'+t.eyebrow+'</p>'+
+    '<h1>'+t.h1+'</h1>'+
+    '<p class="lede">'+t.lede+'</p>'+
+    '<div class="proof"><p><span class="ic">◆</span>'+t.proof+'</p></div>'+
+    '<button class="btn btn-primary" id="shoot">'+ICON.cam+t.shoot+'</button>'+
+    footer();
+  document.getElementById('shoot').onclick = ()=> fileInput.click();
+}
+
+function renderPending(dataUrl){
+  screen.innerHTML =
+    '<div class="pending">'+
+      '<img class="thumb" src="'+dataUrl+'" alt=""/>'+
+      '<div class="spinner" role="status" aria-label="'+t.analyzing+'"></div>'+
+      '<p>'+t.analyzing+'</p>'+
+    '</div>';
+}
+
+function badge(verdict){
+  if(verdict==='valuable') return '<span class="badge b-ok">'+ICON.ok+t.badgeOk+'</span>';
+  if(verdict==='mid')      return '<span class="badge b-mid">'+ICON.ok+t.badgeMid+'</span>';
+  return '<span class="badge b-un">'+ICON.eye+t.badgeUn+'</span>';
+}
+
+function renderCard(r, dataUrl){
+  let detail = '<div class="detail">';
+  if(r.look_at && r.look_at.length)
+    detail += '<div class="row"><span class="ic">'+ICON.eye+'</span><span>'+t.lookAt+': '+r.look_at.join(', ')+'</span></div>';
+  if(r.red_flags && r.red_flags.length)
+    detail += '<div class="row"><span class="ic">'+ICON.flag+'</span><span>'+t.flag+': '+r.red_flags.join(', ')+'</span></div>';
+  detail += '</div>';
+
+  screen.innerHTML =
+    '<div class="card-photo"><img src="'+dataUrl+'" alt=""/></div>'+
+    badge(r.verdict)+
+    '<h2 class="card-title">'+(r.title||'Монета')+'</h2>'+
+    '<p class="card-sub">'+(r.origin||'')+(r.metal?' · '+r.metal:'')+'</p>'+
+    detail+
+    '<button class="btn btn-primary" id="expert">'+ICON.exp+t.toExpert+'</button>'+
+    '<div class="gap"></div>'+
+    '<button class="btn btn-ghost" id="self">'+t.selfSell+'</button>'+
+    '<div class="gap"></div>'+
+    '<button class="btn btn-ghost" id="again">'+t.again+'</button>'+
+    footer();
+
+  document.getElementById('expert').onclick = ()=>{
+    /* ПЛЕЙСХОЛДЕР. В рабочей версии: фото + контакт → Telegram-бот →
+       Make → OpenAI уже отработал → запись в Notion Opportunities,
+       уведомление тебе и антиквару. Здесь — заглушка. */
+    alert(t.expertSent);
+  };
+  document.getElementById('self').onclick = ()=> alert('Совет: дневной свет, без вспышки, сними аверс, реверс и гурт. Площадки: профильные нумизматические аукционы и доски. Не чисти монету.');
+  document.getElementById('again').onclick = renderIntro;
+}
+
+function renderError(msg, dataUrl){
+  screen.innerHTML =
+    (dataUrl?'<div class="card-photo"><img src="'+dataUrl+'" alt=""/></div>':'')+
+    '<p class="err">'+msg+'</p>'+
+    '<button class="btn btn-primary" id="again">'+ICON.cam+t.again+'</button>'+
+    footer();
+  document.getElementById('again').onclick = renderIntro;
+}
+
+const PROMPT =
+"Ты — опытный нумизмат-оценщик. На фото предположительно монета. "+
+"Дай ТОЛЬКО первичную атрибуцию по фото (не финальную оценку и не цену в деньгах). "+
+"Если на фото не монета — верни verdict \"not_coin\". "+
+"Если монета явно рядовая/массовая — \"mid\". Если фото нечёткое/не видно деталей — \"unclear\". "+
+"Если есть признаки потенциально ценной (старая, серебро/золото, редкий тип, хорошее состояние) — \"valuable\". "+
+"Никогда не выдумывай точный год, если не уверен — пиши диапазон/эпоху. "+
+"Отвечай СТРОГО одним JSON-объектом на русском, без markdown и без пояснений вокруг, по схеме: "+
+'{"verdict":"valuable|mid|unclear|not_coin",'+
+'"title":"короткое название, напр. Серебряная монета",'+
+'"origin":"страна/регион и эпоха, напр. Российская империя · конец XIX в.",'+
+'"metal":"вероятный металл словами, напр. вероятно серебро",'+
+'"look_at":["2-3 детали, на что смотреть: гурт, износ, патина, клеймо"],'+
+'"red_flags":["1-2 риска подделки или 1 совет, напр. не чистить"]}';
+
+async function analyze(base64, mediaType, dataUrl){
+  try{
+    const res = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-6",
+        max_tokens:1000,
+        messages:[{role:"user",content:[
+          {type:"image",source:{type:"base64",media_type:mediaType,data:base64}},
+          {type:"text",text:PROMPT}
+        ]}]
+      })
+    });
+    const data = await res.json();
+    let txt = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim();
+    const s = txt.indexOf('{'), e = txt.lastIndexOf('}');
+    if(s>=0 && e>s) txt = txt.slice(s, e+1);
+    let r = null;
+    try{ r = JSON.parse(txt); }catch(_){ r = null; }
+    if(r && r.verdict==='not_coin'){ renderError(t.notCoin, dataUrl); return; }
+    if(!r){
+      r = {verdict:'unclear', title:'Похоже на монету', origin:'',
+           metal:'', look_at:['сними крупнее аверс, реверс и гурт'],
+           red_flags:['нужно фото получше для точной атрибуции']};
+    }
+    renderCard(r, dataUrl);
+  }catch(e){
+    renderCard({verdict:'unclear', title:'Похоже на монету', origin:'',
+      metal:'', look_at:['сними крупнее, при дневном свете'],
+      red_flags:['оценку лучше доверить эксперту']}, dataUrl);
+  }
+}
+
+fileInput.addEventListener('change', (e)=>{
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    const dataUrl = reader.result;
+    renderPending(dataUrl);
+    const base64 = dataUrl.split(',')[1];
+    const mediaType = (dataUrl.match(/^data:(.*?);/)||[])[1] || 'image/jpeg';
+    analyze(base64, mediaType, dataUrl);
+  };
+  reader.readAsDataURL(f);
+  fileInput.value = '';
+});
+
+renderIntro();
+</script>
+</body>
+</html>
