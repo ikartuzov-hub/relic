@@ -280,7 +280,7 @@ const I = {
   tD:'◆', tF:'❖', tP:'€', tM:'✦'
 };
 
-function foot(t){ return '<p class="foot">'+t.foot+'</p>'; }
+function foot(t){ return '<p class="foot">\u00a9 <a href="https://www.linkedin.com/in/igor-kartuzov/" target="_blank" rel="noopener">Igor Kartuzov</a> \u00b7 <a href="'+HUB+'?lang='+lang+'">SeedWave</a></p>'; }
 function botLink(t,label){ return '<a class="btn btn-primary" href="'+BOT+'?start=relic_'+lang+'">'+I.send+(label||t.botCta)+'</a>'; }
 
 function render(){
