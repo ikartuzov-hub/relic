@@ -1,0 +1,14 @@
+{
+  "name": "Relic — нумизматический ассистент",
+  "short_name": "Relic",
+  "description": "Relic — нумизматический ассистент.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1714",
+  "theme_color": "#8a5a24",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
