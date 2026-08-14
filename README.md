@@ -6,8 +6,8 @@
 
 <p align="center">
   <em>Curated finds, in your language.</em><br>
-  <a href="https://ikartuzov-hub.github.io/relic/">Live demo</a> ·
-  <a href="https://ikartuzov-hub.github.io/seedwave-catalog/hub">SeedWave Hub</a> ·
+  <a href="https://r.seedwave.pt/">Live demo</a> ·
+  <a href="https://seedwave.pt/hub/">SeedWave Hub</a> ·
   <a href="https://www.linkedin.com/in/igor-kartuzov">Built by Igor Kartuzov</a>
 </p>
 
@@ -23,7 +23,7 @@ Relic is another product on the same SeedWave engine, pointed at curated finds. 
 `SeedWave engine` · `multilingual (RU/EN/PT/ES/DE)` · `two-theme UI (day/night)` · `GitHub Pages`
 
 ## See it live
-- **Demo:** https://ikartuzov-hub.github.io/relic/
+- **Demo:** https://r.seedwave.pt/
 
 ## Screenshots
 <!-- TODO: add 1–3 clean screenshots. Show the product, not the code.
@@ -43,5 +43,5 @@ Relic is another product on the same SeedWave engine, pointed at curated finds. 
 ---
 
 <p align="center">
-  <sub>© Igor Kartuzov · <a href="https://ikartuzov-hub.github.io/seedwave-catalog/hub">SeedWave</a> — AI-first studio · Madeira, EU</sub>
+  <sub>© Igor Kartuzov · <a href="https://seedwave.pt/hub/">SeedWave</a> — AI-first studio · Madeira, EU</sub>
 </p>
